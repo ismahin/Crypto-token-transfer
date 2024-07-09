@@ -1,70 +1,163 @@
-# Getting Started with Create React App
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# MetaMask Token Transfer
 
-## Available Scripts
+This project is a simple React application that allows users to connect their MetaMask wallet, view their balances for both native Ethereum (ETH) and ERC20 tokens, and transfer these tokens to a specified recipient.
 
-In the project directory, you can run:
+## Features
 
-### `npm start`
+- Connect to MetaMask wallet
+- View balances of native Ethereum (ETH) and specified ERC20 tokens (e.g., LINK)
+- Select a token from the dropdown to view its balance
+- Transfer selected token to a recipient address
+- Disconnect the wallet
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+## Prerequisites
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+- Node.js and npm installed
+- MetaMask browser extension installed
 
-### `npm test`
+## Getting Started
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+1. **Clone the repository**
 
-### `npm run build`
+```sh
+git clone https://github.com/yourusername/metamask-token-transfer.git
+cd metamask-token-transfer
+```
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+2. **Install dependencies**
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+```sh
+npm install
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+3. **Run the application**
 
-### `npm run eject`
+```sh
+npm start
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+The application will be available at `http://localhost:3000`.
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Code Overview
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+### Libraries Used
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+- `react`: For building the user interface
+- `web3`: For interacting with the Ethereum blockchain
+- `big-integer`: For handling large integers (BigInt alternative)
+- `meta-mask`: MetaMask for Ethereum wallet interaction
 
-## Learn More
+### Main Components
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+#### `App.js`
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+This is the main component of the application, containing the following functionalities:
 
-### Code Splitting
+- **State Management**: Manages the state for the web3 instance, account, balances, tokens, selected token, recipient address, amount, and transaction hash.
+- **Load Balances**: Fetches and displays the balances of both native ETH and ERC20 tokens.
+- **Handle Transfers**: Manages the transfer of selected tokens to the recipient address.
+- **Event Listeners**: Listens for account changes and updates the state accordingly.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+### Key Functions
 
-### Analyzing the Bundle Size
+#### `loadBalance`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+Loads the balance of a given token for the specified account.
 
-### Making a Progressive Web App
+```jsx
+const loadBalance = useCallback(async (account, token) => {
+  if (web3 && token) {
+    try {
+      if (token.symbol === 'ETH') {
+        const balance = await web3.eth.getBalance(account);
+        setBalance(Web3.utils.fromWei(balance, 'ether'));
+      } else {
+        const tokenContract = new web3.eth.Contract(ERC20_ABI, token.address);
+        const balance = await tokenContract.methods.balanceOf(account).call();
+        const decimals = await tokenContract.methods.decimals().call();
+        setBalance(Number(balance) / 10 ** Number(decimals));
+      }
+    } catch (error) {
+      console.error(`Failed to load balance for token ${token.symbol}:`, error);
+      setBalance(null);
+    }
+  }
+}, [web3]);
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+#### `loadTokens`
 
-### Advanced Configuration
+Loads balances for both native ETH and specified ERC20 tokens.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+```jsx
+const loadTokens = useCallback(async (account) => {
+  const tokenBalances = [];
+  try {
+    const ethBalance = await web3.eth.getBalance(account);
+    tokenBalances.push({ symbol: 'ETH', balance: Web3.utils.fromWei(ethBalance, 'ether'), address: '' });
+  } catch (error) {
+    console.error('Failed to load ETH balance:', error);
+  }
+  for (const token of knownTokens) {
+    try {
+      const tokenContract = new web3.eth.Contract(ERC20_ABI, token.address);
+      const balance = await tokenContract.methods.balanceOf(account).call();
+      const decimals = await tokenContract.methods.decimals().call();
+      const symbol = await tokenContract.methods.symbol().call();
+      tokenBalances.push({ symbol, balance: Number(balance) / 10 ** Number(decimals), address: token.address });
+    } catch (error) {
+      console.error(`Failed to load token ${token.name}:`, error);
+    }
+  }
+  setTokens(tokenBalances);
+}, [web3, knownTokens]);
+```
 
-### Deployment
+#### `handleTransfer`
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+Handles the transfer of the selected token to the recipient address.
 
-### `npm run build` fails to minify
+```jsx
+const handleTransfer = async () => {
+  if (web3 && account && recipient && amount && selectedToken) {
+    try {
+      let tx;
+      if (selectedToken.symbol === 'ETH') {
+        tx = await web3.eth.sendTransaction({
+          from: account,
+          to: recipient,
+          value: web3.utils.toWei(amount, 'ether'),
+        });
+      } else {
+        const tokenContract = new web3.eth.Contract(ERC20_ABI, selectedToken.address);
+        const decimals = await tokenContract.methods.decimals().call();
+        const value = bigInt(web3.utils.toWei(amount, 'ether')).divide(bigInt(10).pow(18 - Number(decimals)));
+        console.log(`Transferring ${value.toString()} ${selectedToken.symbol} to ${recipient}`);
+        tx = await tokenContract.methods.transfer(recipient, value.toString()).send({ from: account });
+      }
+      console.log('Transaction:', tx);
+      setTransactionHash(tx.transactionHash);
+    } catch (error) {
+      console.error('Failed to transfer token:', error);
+    }
+  }
+};
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+## Screenshots
+
+Include screenshots of your app here.
+
+## Contributing
+
+1. Fork the repository
+2. Create a new branch (`git checkout -b feature-branch`)
+3. Make your changes
+4. Commit your changes (`git commit -m 'Add some feature'`)
+5. Push to the branch (`git push origin feature-branch`)
+6. Create a new Pull Request
+
+## License
+
+This project is licensed under the MIT License.
