@@ -1,3 +1,4 @@
+import { Description } from "../../../Elements/Description/Description";
 import { SelectedToken } from "./components/Tokens/SelectedToken";
 import { TokenOptions } from "./components/Tokens/TokenOptions";
 import { WalletButtons } from "./components/WalletButtons";
@@ -20,7 +21,7 @@ export function WalletInfo({
 }) {
   return (
     <div>
-      <p>Account: {account}</p>
+      <Description text={`Account: ${account}`} />
       <TokenOptions
         handleTokenChange={handleTokenChange}
         selectedToken={selectedToken}

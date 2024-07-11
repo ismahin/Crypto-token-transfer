@@ -1,10 +1,10 @@
+import { Description } from "../../../../../Elements/Description/Description";
+
 export function SelectedToken({ selectedToken, balance }) {
   return (
     <>
       {selectedToken && (
-        <p>
-          Balance: {balance} {selectedToken.symbol}
-        </p>
+        <Description text={` Balance: ${balance} ${selectedToken.symbol}`} />
       )}
     </>
   );

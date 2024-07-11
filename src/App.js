@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import Web3 from "web3";
 import bigInt from "big-integer";
-import "./App.css";
 import { Header } from "./partials/Elements/Header/Header";
 import { Button } from "./partials/Elements/Buttons/Button";
 import { WalletInfo } from "./partials/Screen/Main/Wallet/WalletInfo";
 import { TransactionHash } from "./partials/Screen/Main/TransactionHash/TransactionHash";
+import "./App.css";
 
 const ERC20_ABI = [
   {

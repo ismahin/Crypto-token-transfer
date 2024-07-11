@@ -1,3 +1,5 @@
+import { Description } from "../../../Elements/Description/Description";
+
 export function TransactionHash({ transactionHash, setTransactionHash }) {
   return (
     <>
@@ -10,8 +12,8 @@ export function TransactionHash({ transactionHash, setTransactionHash }) {
             >
               &times;
             </span>
-            <p>Transaction successful!</p>
-            <p>Transaction ID: {transactionHash}</p>
+            <Description text={`Transaction successful!`} />
+            <Description text={`Transaction ID: ${transactionHash}`} />
           </div>
         </div>
       )}
