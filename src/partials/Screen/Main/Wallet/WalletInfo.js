@@ -1,16 +1,27 @@
 export function WalletInfo({
   account,
+  setAccount,
+  setBalance,
+  setTransactionHash,
   handleTokenChange,
   selectedToken,
   tokens,
   balance,
   recipient,
   setRecipient,
-  disconnectWallet,
   handleTransfer,
   setAmount,
   amount,
 }) {
+    
+  const disconnectWallet = () => {
+    setAccount(null);
+    setBalance(null);
+    setRecipient("");
+    setAmount("");
+    setTransactionHash(null);
+    window.location.reload();
+  };
   return (
     <div>
       <p>Account: {account}</p>

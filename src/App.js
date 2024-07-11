@@ -5,6 +5,7 @@ import "./App.css";
 import { Header } from "./partials/Elements/Header/Header";
 import { Button } from "./partials/Elements/Buttons/Button";
 import { WalletInfo } from "./partials/Screen/Main/Wallet/WalletInfo";
+import { TransactionHash } from "./partials/Screen/Main/TransactionHash/TransactionHash";
 
 const ERC20_ABI = [
   {
@@ -178,15 +179,6 @@ const App = () => {
     }
   };
 
-  const disconnectWallet = () => {
-    setAccount(null);
-    setBalance(null);
-    setRecipient("");
-    setAmount("");
-    setTransactionHash(null);
-    window.location.reload();
-  };
-
   const handleTransfer = async () => {
     if (web3 && account && recipient && amount && selectedToken) {
       try {
@@ -225,7 +217,7 @@ const App = () => {
 
   return (
     <div className="App">
-      <header className="App-header">
+      <div className="main">
         <Header />
         {!account ? (
           <Button text={"Connect MetaMask"} action={connectWallet} />
@@ -234,7 +226,6 @@ const App = () => {
             account={account}
             amount={amount}
             balance={balance}
-            disconnectWallet={disconnectWallet}
             handleTokenChange={handleTokenChange}
             handleTransfer={handleTransfer}
             recipient={recipient}
@@ -244,21 +235,11 @@ const App = () => {
             tokens={tokens}
           />
         )}
-        {transactionHash && (
-          <div className="modal">
-            <div className="modal-content">
-              <span
-                className="close-button"
-                onClick={() => setTransactionHash(null)}
-              >
-                &times;
-              </span>
-              <p>Transaction successful!</p>
-              <p>Transaction ID: {transactionHash}</p>
-            </div>
-          </div>
-        )}
-      </header>
+        <TransactionHash
+          setTransactionHash={setTransactionHash}
+          transactionHash={transactionHash}
+        />
+      </div>
     </div>
   );
 };
