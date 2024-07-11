@@ -20,7 +20,7 @@ export function WalletInfo({
   amount,
 }) {
   return (
-    <div>
+    <>
       <Description text={`Account: ${account}`} />
       <TokenOptions
         handleTokenChange={handleTokenChange}
@@ -42,6 +42,6 @@ export function WalletInfo({
         setRecipient={setRecipient}
         setTransactionHash={setTransactionHash}
       />
-    </div>
+    </>
   );
 }
