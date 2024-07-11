@@ -1,4 +1,7 @@
+import { SelectedToken } from "./components/Tokens/SelectedToken";
+import { TokenOptions } from "./components/Tokens/TokenOptions";
 import { WalletButtons } from "./components/WalletButtons";
+import { WalletInputs } from "./components/WalletInput/WalletInputs";
 
 export function WalletInfo({
   account,
@@ -18,34 +21,18 @@ export function WalletInfo({
   return (
     <div>
       <p>Account: {account}</p>
-      <select onChange={handleTokenChange} value={selectedToken?.address || ""}>
-        <option value="" disabled>
-          Select Token
-        </option>
-        {tokens.map((token) => (
-          <option key={token.symbol} value={token.address}>
-            {token.symbol} ({token.balance})
-          </option>
-        ))}
-      </select>
-      {selectedToken && (
-        <p>
-          Balance: {balance} {selectedToken.symbol}
-        </p>
-      )}
-      <input
-        type="text"
-        placeholder="Recipient Address"
-        value={recipient}
-        onChange={(e) => setRecipient(e.target.value)}
+      <TokenOptions
+        handleTokenChange={handleTokenChange}
+        selectedToken={selectedToken}
+        tokens={tokens}
       />
-      <input
-        type="text"
-        placeholder="Amount"
-        value={amount}
-        onChange={(e) => setAmount(e.target.value)}
+      <SelectedToken balance={balance} selectedToken={selectedToken} />
+      <WalletInputs
+        setAmount={setAmount}
+        setRecipient={setRecipient}
+        recipient={recipient}
+        amount={amount}
       />
-
       <WalletButtons
         handleTransfer={handleTransfer}
         setAccount={setAccount}
