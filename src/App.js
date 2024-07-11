@@ -1,7 +1,10 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import Web3 from 'web3';
-import bigInt from 'big-integer';
-import './App.css';
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import Web3 from "web3";
+import bigInt from "big-integer";
+import "./App.css";
+import { Header } from "./partials/Elements/Header/Header";
+import { Button } from "./partials/Elements/Buttons/Button";
+import { WalletInfo } from "./partials/Screen/Main/Wallet/WalletInfo";
 
 const ERC20_ABI = [
   {
@@ -27,7 +30,10 @@ const ERC20_ABI = [
   },
   {
     constant: false,
-    inputs: [{ name: "_to", type: "address" }, { name: "_value", type: "uint256" }],
+    inputs: [
+      { name: "_to", type: "address" },
+      { name: "_value", type: "uint256" },
+    ],
     name: "transfer",
     outputs: [{ name: "success", type: "bool" }],
     type: "function",
@@ -40,55 +46,80 @@ const App = () => {
   const [balance, setBalance] = useState(null);
   const [tokens, setTokens] = useState([]);
   const [selectedToken, setSelectedToken] = useState(null);
-  const [recipient, setRecipient] = useState('');
-  const [amount, setAmount] = useState('');
+  const [recipient, setRecipient] = useState("");
+  const [amount, setAmount] = useState("");
   const [transactionHash, setTransactionHash] = useState(null);
 
-  const knownTokens = useMemo(() => [
-    { name: 'LINK', address: '0x779877A7B0D9E8603169DdbD7836e478b4624789' },
-    { name: 'WETH', address: '0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14' },
-  ], []);
+  const knownTokens = useMemo(
+    () => [
+      { name: "LINK", address: "0x779877A7B0D9E8603169DdbD7836e478b4624789" },
+      { name: "WETH", address: "0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14" },
+    ],
+    []
+  );
 
-  const loadBalance = useCallback(async (account, token) => {
-    if (web3 && token) {
+  const loadBalance = useCallback(
+    async (account, token) => {
+      if (web3 && token) {
+        try {
+          if (token.symbol === "ETH") {
+            const balance = await web3.eth.getBalance(account);
+            setBalance(Web3.utils.fromWei(balance, "ether"));
+          } else {
+            const tokenContract = new web3.eth.Contract(
+              ERC20_ABI,
+              token.address
+            );
+            const balance = await tokenContract.methods
+              .balanceOf(account)
+              .call();
+            const decimals = await tokenContract.methods.decimals().call();
+            setBalance(Number(balance) / 10 ** Number(decimals));
+          }
+        } catch (error) {
+          console.error(
+            `Failed to load balance for token ${token.symbol}:`,
+            error
+          );
+          setBalance(null);
+        }
+      }
+    },
+    [web3]
+  );
+
+  const loadTokens = useCallback(
+    async (account) => {
+      const tokenBalances = [];
       try {
-        if (token.symbol === 'ETH') {
-          const balance = await web3.eth.getBalance(account);
-          setBalance(Web3.utils.fromWei(balance, 'ether'));
-        } else {
+        const ethBalance = await web3.eth.getBalance(account);
+        tokenBalances.push({
+          symbol: "ETH",
+          balance: Web3.utils.fromWei(ethBalance, "ether"),
+          address: "",
+        });
+      } catch (error) {
+        console.error("Failed to load ETH balance:", error);
+      }
+      for (const token of knownTokens) {
+        try {
           const tokenContract = new web3.eth.Contract(ERC20_ABI, token.address);
           const balance = await tokenContract.methods.balanceOf(account).call();
           const decimals = await tokenContract.methods.decimals().call();
-          setBalance(Number(balance) / 10 ** Number(decimals));
+          const symbol = await tokenContract.methods.symbol().call();
+          tokenBalances.push({
+            symbol,
+            balance: Number(balance) / 10 ** Number(decimals),
+            address: token.address,
+          });
+        } catch (error) {
+          console.error(`Failed to load token ${token.name}:`, error);
         }
-      } catch (error) {
-        console.error(`Failed to load balance for token ${token.symbol}:`, error);
-        setBalance(null);
       }
-    }
-  }, [web3]);
-
-  const loadTokens = useCallback(async (account) => {
-    const tokenBalances = [];
-    try {
-      const ethBalance = await web3.eth.getBalance(account);
-      tokenBalances.push({ symbol: 'ETH', balance: Web3.utils.fromWei(ethBalance, 'ether'), address: '' });
-    } catch (error) {
-      console.error('Failed to load ETH balance:', error);
-    }
-    for (const token of knownTokens) {
-      try {
-        const tokenContract = new web3.eth.Contract(ERC20_ABI, token.address);
-        const balance = await tokenContract.methods.balanceOf(account).call();
-        const decimals = await tokenContract.methods.decimals().call();
-        const symbol = await tokenContract.methods.symbol().call();
-        tokenBalances.push({ symbol, balance: Number(balance) / 10 ** Number(decimals), address: token.address });
-      } catch (error) {
-        console.error(`Failed to load token ${token.name}:`, error);
-      }
-    }
-    setTokens(tokenBalances);
-  }, [web3, knownTokens]);
+      setTokens(tokenBalances);
+    },
+    [web3, knownTokens]
+  );
 
   useEffect(() => {
     if (window.ethereum) {
@@ -109,20 +140,25 @@ const App = () => {
         }
       };
 
-      window.ethereum.on('accountsChanged', handleAccountsChanged);
+      window.ethereum.on("accountsChanged", handleAccountsChanged);
 
       return () => {
-        window.ethereum.removeListener('accountsChanged', handleAccountsChanged);
+        window.ethereum.removeListener(
+          "accountsChanged",
+          handleAccountsChanged
+        );
       };
     } else {
-      alert('MetaMask is not installed');
+      alert("MetaMask is not installed");
     }
   }, [loadBalance, loadTokens, selectedToken]);
 
   const connectWallet = async () => {
     if (web3) {
       try {
-        const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+        const accounts = await window.ethereum.request({
+          method: "eth_requestAccounts",
+        });
         setAccount(accounts[0]);
         await loadTokens(accounts[0]);
         if (selectedToken) {
@@ -135,7 +171,7 @@ const App = () => {
   };
 
   const handleTokenChange = (e) => {
-    const token = tokens.find(t => t.address === e.target.value);
+    const token = tokens.find((t) => t.address === e.target.value);
     setSelectedToken(token);
     if (account) {
       loadBalance(account, token);
@@ -145,8 +181,8 @@ const App = () => {
   const disconnectWallet = () => {
     setAccount(null);
     setBalance(null);
-    setRecipient('');
-    setAmount('');
+    setRecipient("");
+    setAmount("");
     setTransactionHash(null);
     window.location.reload();
   };
@@ -155,23 +191,34 @@ const App = () => {
     if (web3 && account && recipient && amount && selectedToken) {
       try {
         let tx;
-        if (selectedToken.symbol === 'ETH') {
+        if (selectedToken.symbol === "ETH") {
           tx = await web3.eth.sendTransaction({
             from: account,
             to: recipient,
-            value: web3.utils.toWei(amount, 'ether'),
+            value: web3.utils.toWei(amount, "ether"),
           });
         } else {
-          const tokenContract = new web3.eth.Contract(ERC20_ABI, selectedToken.address);
+          const tokenContract = new web3.eth.Contract(
+            ERC20_ABI,
+            selectedToken.address
+          );
           const decimals = await tokenContract.methods.decimals().call();
-          const value = bigInt(web3.utils.toWei(amount, 'ether')).divide(bigInt(10).pow(18 - Number(decimals)));
-          console.log(`Transferring ${value.toString()} ${selectedToken.symbol} to ${recipient}`);
-          tx = await tokenContract.methods.transfer(recipient, value.toString()).send({ from: account });
+          const value = bigInt(web3.utils.toWei(amount, "ether")).divide(
+            bigInt(10).pow(18 - Number(decimals))
+          );
+          console.log(
+            `Transferring ${value.toString()} ${
+              selectedToken.symbol
+            } to ${recipient}`
+          );
+          tx = await tokenContract.methods
+            .transfer(recipient, value.toString())
+            .send({ from: account });
         }
-        console.log('Transaction:', tx);
+        console.log("Transaction:", tx);
         setTransactionHash(tx.transactionHash);
       } catch (error) {
-        console.error('Failed to transfer token:', error);
+        console.error("Failed to transfer token:", error);
       }
     }
   };
@@ -179,41 +226,33 @@ const App = () => {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>MetaMask Token Transfer</h1>
+        <Header />
         {!account ? (
-          <button onClick={connectWallet}>Connect MetaMask</button>
+          <Button text={"Connect MetaMask"} action={connectWallet} />
         ) : (
-          <div>
-            <p>Account: {account}</p>
-            <select onChange={handleTokenChange} value={selectedToken?.address || ''}>
-              <option value="" disabled>Select Token</option>
-              {tokens.map(token => (
-                <option key={token.symbol} value={token.address}>
-                  {token.symbol} ({token.balance})
-                </option>
-              ))}
-            </select>
-            {selectedToken && <p>Balance: {balance} {selectedToken.symbol}</p>}
-            <input
-              type="text"
-              placeholder="Recipient Address"
-              value={recipient}
-              onChange={(e) => setRecipient(e.target.value)}
-            />
-            <input
-              type="text"
-              placeholder="Amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-            <button onClick={handleTransfer}>Send</button>
-            <button onClick={disconnectWallet}>Disconnect</button>
-          </div>
+          <WalletInfo
+            account={account}
+            amount={amount}
+            balance={balance}
+            disconnectWallet={disconnectWallet}
+            handleTokenChange={handleTokenChange}
+            handleTransfer={handleTransfer}
+            recipient={recipient}
+            selectedToken={selectedToken}
+            setAmount={setAmount}
+            setRecipient={setRecipient}
+            tokens={tokens}
+          />
         )}
         {transactionHash && (
           <div className="modal">
             <div className="modal-content">
-              <span className="close-button" onClick={() => setTransactionHash(null)}>&times;</span>
+              <span
+                className="close-button"
+                onClick={() => setTransactionHash(null)}
+              >
+                &times;
+              </span>
               <p>Transaction successful!</p>
               <p>Transaction ID: {transactionHash}</p>
             </div>
