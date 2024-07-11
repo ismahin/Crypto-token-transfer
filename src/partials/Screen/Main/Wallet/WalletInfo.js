@@ -1,3 +1,5 @@
+import { WalletButtons } from "./components/WalletButtons";
+
 export function WalletInfo({
   account,
   setAccount,
@@ -13,15 +15,6 @@ export function WalletInfo({
   setAmount,
   amount,
 }) {
-    
-  const disconnectWallet = () => {
-    setAccount(null);
-    setBalance(null);
-    setRecipient("");
-    setAmount("");
-    setTransactionHash(null);
-    window.location.reload();
-  };
   return (
     <div>
       <p>Account: {account}</p>
@@ -52,8 +45,15 @@ export function WalletInfo({
         value={amount}
         onChange={(e) => setAmount(e.target.value)}
       />
-      <button onClick={handleTransfer}>Send</button>
-      <button onClick={disconnectWallet}>Disconnect</button>
+
+      <WalletButtons
+        handleTransfer={handleTransfer}
+        setAccount={setAccount}
+        setAmount={setAmount}
+        setBalance={setBalance}
+        setRecipient={setRecipient}
+        setTransactionHash={setTransactionHash}
+      />
     </div>
   );
 }
